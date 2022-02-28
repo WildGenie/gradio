@@ -57,24 +57,32 @@ def get_local_ip_address() -> str:
 
 def initiated_analytics(data: Dict[str: Any]) -> None:
     try:
-        requests.post(analytics_url + 'gradio-initiated-analytics/',
-                        data=data, timeout=3)
+        requests.post(
+            f'{analytics_url}gradio-initiated-analytics/', data=data, timeout=3
+        )
+
     except (requests.ConnectionError, requests.exceptions.ReadTimeout):
         pass  # do not push analytics if no network
 
 
 def launch_analytics(data: Dict[str, Any]) -> None:
     try:
-        requests.post(analytics_url + 'gradio-launched-analytics/',
-                        data=data, timeout=3)
+        requests.post(
+            f'{analytics_url}gradio-launched-analytics/', data=data, timeout=3
+        )
+
     except (requests.ConnectionError, requests.exceptions.ReadTimeout):
         pass  # do not push analytics if no network
 
 
 def integration_analytics(data: Dict[str, Any]) -> None:
     try:
-        requests.post(analytics_url + 'gradio-integration-analytics/',
-                        data=data, timeout=3)
+        requests.post(
+            f'{analytics_url}gradio-integration-analytics/',
+            data=data,
+            timeout=3,
+        )
+
     except (
             requests.ConnectionError, requests.exceptions.ReadTimeout):
         pass  # do not push analytics if no network
@@ -87,21 +95,19 @@ def error_analytics(ip_address: str, message: str) -> None:
     """
     data = {'ip_address': ip_address, 'error': message}
     try:
-        requests.post(analytics_url + 'gradio-error-analytics/',
-                      data=data, timeout=3)
+        requests.post(f'{analytics_url}gradio-error-analytics/', data=data, timeout=3)
     except (requests.ConnectionError, requests.exceptions.ReadTimeout):
         pass  # do not push analytics if no network
 
 
 async def log_feature_analytics(ip_address: str, feature: str) -> None:
-        data={'ip_address': ip_address, 'feature': feature}    
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.post(
-                    analytics_url + 'gradio-feature-analytics/', data=data):
-                        pass
-            except (aiohttp.ClientError):
-                pass  # do not push analytics if no network
+    data={'ip_address': ip_address, 'feature': feature}
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f'{analytics_url}gradio-feature-analytics/', data=data):
+                pass
+        except (aiohttp.ClientError):
+            pass  # do not push analytics if no network
 
 
 def colab_check() -> bool:
@@ -203,8 +209,10 @@ def get_config_file(interface: Interface) -> Dict[str, Any]:
             if not iface["label"]:
                 iface["label"] = param.replace("_", " ")
         for i, iface in enumerate(config["output_components"]):
-            outputs_per_function = int(
-                len(interface.output_components) / len(interface.predict))
+            outputs_per_function = len(interface.output_components) // len(
+                interface.predict
+            )
+
             function_index = i // outputs_per_function
             component_index = i - function_index * outputs_per_function
             ret_name = "Output " + \
@@ -223,17 +231,16 @@ def get_config_file(interface: Interface) -> Dict[str, Any]:
                 raise FileNotFoundError(
                     "Could not find examples directory: " + interface.examples)
             log_file = os.path.join(interface.examples, "log.csv")
-            if not os.path.exists(log_file):
-                if len(interface.input_components) == 1:
-                    examples = [[os.path.join(interface.examples, item)]
-                                for item in os.listdir(interface.examples)]
-                else:
-                    raise FileNotFoundError(
-                        "Could not find log file (required for multiple inputs): " + log_file)
-            else:
+            if os.path.exists(log_file):
                 with open(log_file) as logs:
                     examples = list(csv.reader(logs))
                     examples = examples[1:]  # remove header
+            elif len(interface.input_components) == 1:
+                examples = [[os.path.join(interface.examples, item)]
+                            for item in os.listdir(interface.examples)]
+            else:
+                raise FileNotFoundError(
+                    "Could not find log file (required for multiple inputs): " + log_file)
             for i, example in enumerate(examples):
                 for j, (component, cell) in enumerate(zip(interface.input_components + interface.output_components, example)):
                     examples[i][j] = component.restore_flagged(

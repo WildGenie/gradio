@@ -10,7 +10,7 @@ os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
 class TestDefault(unittest.TestCase):
     def test_default_text(self):
-        max_word_len = lambda text: max([len(word) for word in text.split(" ")])
+        max_word_len = lambda text: max(len(word) for word in text.split(" "))
         text_interface = Interface(max_word_len, "textbox", "label", interpretation="default")
         interpretation = text_interface.interpret(["quickest brown fox"])[0][0]
         self.assertGreater(interpretation[0][1], 0)  # Checks to see if the first word has >0 score.
@@ -18,7 +18,7 @@ class TestDefault(unittest.TestCase):
 
 class TestShapley(unittest.TestCase):
     def test_shapley_text(self):
-        max_word_len = lambda text: max([len(word) for word in text.split(" ")])
+        max_word_len = lambda text: max(len(word) for word in text.split(" "))
         text_interface = Interface(max_word_len, "textbox", "label", interpretation="shapley")
         interpretation = text_interface.interpret(["quickest brown fox"])[0][0]
         self.assertGreater(interpretation[0][1], 0)  # Checks to see if the first word has >0 score.
@@ -26,7 +26,7 @@ class TestShapley(unittest.TestCase):
 
 class TestCustom(unittest.TestCase):
     def test_custom_text(self):
-        max_word_len = lambda text: max([len(word) for word in text.split(" ")])
+        max_word_len = lambda text: max(len(word) for word in text.split(" "))
         custom = lambda text: [(char, 1) for char in text]
         text_interface = Interface(max_word_len, "textbox", "label", interpretation=custom)
         result = text_interface.interpret(["quickest brown fox"])[0][0]

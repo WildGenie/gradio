@@ -53,7 +53,7 @@ def get_current_user(request: Request) -> Optional[str]:
 
 @app.get('/login_check')
 def login_check(user: str = Depends(get_current_user)):
-    if app.auth is None or not(user is None):
+    if app.auth is None or user is not None:
         return
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
                         detail="Not authenticated")
@@ -88,12 +88,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @app.head('/', response_class=HTMLResponse)
 @app.get('/', response_class=HTMLResponse)
 def main(request: Request, user: str = Depends(get_current_user)):
-    if app.auth is None or not(user is None):
+    if app.auth is None or user is not None:
         config = app.interface.config
     else:
         config = {"auth_required": True, 
                   "auth_message": app.interface.auth_message}
-    
+
     return templates.TemplateResponse(
         "frontend/index.html", 
         {"request": request, "config": config}
@@ -169,15 +169,8 @@ async def predict(
 ):
     body = await request.json()
     flag_index = None
-    
-    if body.get("example_id") != None:
-        example_id = body["example_id"]
-        if app.interface.cache_examples:
-            prediction = load_from_cache(app.interface, example_id)
-            durations = None
-        else:
-            prediction, durations = process_example(app.interface, example_id)
-    else:
+
+    if body.get("example_id") is None:
         raw_input = body["data"]
         if app.interface.show_error:
             try:
@@ -193,13 +186,19 @@ async def predict(
                 app.interface, raw_input, prediction,
                 flag_option="" if app.interface.flagging_options else None, 
                 username=username)
-    output = {
+    else:
+        example_id = body["example_id"]
+        if app.interface.cache_examples:
+            prediction = load_from_cache(app.interface, example_id)
+            durations = None
+        else:
+            prediction, durations = process_example(app.interface, example_id)
+    return {
         "data": prediction, 
         "durations": durations, 
         "avg_durations": app.interface.config.get("avg_durations"),
         "flag_index": flag_index
-    }    
-    return output
+    }
 
 
 @app.post("/api/flag/", dependencies=[Depends(login_check)])
@@ -257,9 +256,12 @@ async def queue_status(request: Request):
 def safe_join(directory: str, path: str) -> Optional[str]:
     """Safely path to a base directory to avoid escaping the base directory.
     Borrowed from: werkzeug.security.safe_join"""
-    _os_alt_seps: List[str] = list(
-        sep for sep in [os.path.sep, os.path.altsep] if sep is not None and sep != "/"
-    )
+    _os_alt_seps: List[str] = [
+        sep
+        for sep in [os.path.sep, os.path.altsep]
+        if sep is not None and sep != "/"
+    ]
+
 
     if path != "":
         filename = posixpath.normpath(path)
@@ -278,14 +280,13 @@ def safe_join(directory: str, path: str) -> Optional[str]:
 def get_types(cls_set: List[Type], component: str):
     docset = []
     types = []
-    if component == "input":
-        for cls in cls_set:
+    for cls in cls_set:
+        if component == "input":
             doc = inspect.getdoc(cls.preprocess)
             doc_lines = doc.split("\n")
             docset.append(doc_lines[1].split(":")[-1])
             types.append(doc_lines[1].split(")")[0].split("(")[-1])
-    else:
-        for cls in cls_set:
+        else:
             doc = inspect.getdoc(cls.postprocess)
             doc_lines = doc.split("\n")
             docset.append(doc_lines[-1].split(":")[-1])
@@ -308,15 +309,17 @@ def set_state(*args):
 
     
 if __name__ == '__main__': # Run directly for debugging: python app.py
-    from gradio import Interface    
-    app.interface = Interface(lambda x: "Hello, " + x, "text", "text",
-                              analytics_enabled=False)
+    from gradio import Interface
+    app.interface = Interface(
+        lambda x: f"Hello, {x}", "text", "text", analytics_enabled=False
+    )
+
     app.interface.config = app.interface.get_config_file()
     app.interface.show_error = True
     app.interface.flagging_callback.setup(app.interface.flagging_dir)
     app.favicon_path = None
     app.tokens = {}
-    
+
     auth = True
     if auth:
         app.interface.auth = ("a", "b")

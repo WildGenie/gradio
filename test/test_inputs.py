@@ -59,8 +59,13 @@ class TestTextbox(unittest.TestCase):
     def test_in_interface(self):
         iface = gr.Interface(lambda x: x[::-1], "textbox", "textbox")
         self.assertEqual(iface.process(["Hello"])[0], ["olleH"])
-        iface = gr.Interface(lambda sentence: max([len(word) for word in sentence.split()]), gr.inputs.Textbox(),
-                             gr.outputs.Textbox(), interpretation="default")
+        iface = gr.Interface(
+            lambda sentence: max(len(word) for word in sentence.split()),
+            gr.inputs.Textbox(),
+            gr.outputs.Textbox(),
+            interpretation="default",
+        )
+
         scores, alternative_outputs = iface.interpret(["Return the length of the longest word in this sentence"])
         self.assertEqual(scores, [[('Return', 0.0), (' ', 0), ('the', 0.0), (' ', 0), ('length', 0.0), (' ', 0),
                                    ('of', 0.0), (' ', 0), ('the', 0.0), (' ', 0), ('longest', 0.0), (' ', 0),
@@ -591,7 +596,7 @@ class TestNames(unittest.TestCase):
     # this ensures that `inputs.get_input_instance()` works correctly when instantiating from components
     def test_no_duplicate_uncased_names(self):  
         subclasses = gr.inputs.InputComponent.__subclasses__()
-        unique_subclasses_uncased = set([s.__name__.lower() for s in subclasses])
+        unique_subclasses_uncased = {s.__name__.lower() for s in subclasses}
         self.assertEqual(len(subclasses), len(unique_subclasses_uncased))
 
 

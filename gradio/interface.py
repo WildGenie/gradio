@@ -83,8 +83,7 @@ class Interface:
         """
         interface_info = load_from_pipeline(pipeline)
         kwargs = dict(interface_info, **kwargs)
-        interface = cls(**kwargs)
-        return interface
+        return cls(**kwargs)
 
     def __init__(
         self, 
@@ -163,12 +162,12 @@ class Interface:
         self.output_components = [get_output_instance(o) for o in outputs]
         if repeat_outputs_per_model:
             self.output_components *= len(fn)
-            
+
         if sum(isinstance(i, i_State) for i in self.input_components) > 1:
             raise ValueError("Only one input component can be State.")
         if sum(isinstance(o, o_State) for o in self.output_components) > 1:
             raise ValueError("Only one output component can be State.")
-        
+
         if sum(isinstance(i, i_State) for i in self.input_components) == 1:
             if len(fn) > 1:
                 raise ValueError(
@@ -231,7 +230,7 @@ class Interface:
 
         self.article = article
         self.thumbnail = thumbnail
-        
+
         theme = theme if theme is not None else os.getenv("GRADIO_THEME", "default")
         DEPRECATED_THEME_MAP = {"darkdefault": "default", "darkhuggingface": "dark-huggingface", "darkpeach": "dark-peach", "darkgrass": "dark-grass"}
         VALID_THEME_SET = ("default", "huggingface", "seafoam", "grass", "peach", "dark", "dark-huggingface", "dark-seafoam", "dark-grass", "dark-peach")
@@ -268,7 +267,7 @@ class Interface:
 
         self.simple_server = None
         self.allow_screenshot = allow_screenshot
-        
+
         # For analytics_enabled and allow_flagging: (1) first check for 
         # parameter, (2) check for env variable, (3) default to True/"manual"
         self.analytics_enabled = analytics_enabled if analytics_enabled is not None else os.getenv("GRADIO_ANALYTICS_ENABLED", "True")=="True"
@@ -308,7 +307,9 @@ class Interface:
             warnings.warn("The `show_tips` parameter in the `Interface` is deprecated. Please use the `show_tips` parameter in `launch()` instead")
 
         self.requires_permissions = any(
-            [component.requires_permissions for component in self.input_components])
+            component.requires_permissions for component in self.input_components
+        )
+
 
         self.enable_queue = enable_queue
         if self.enable_queue is not None:
@@ -331,7 +332,7 @@ class Interface:
                 "The `encrypt` parameter in the `Interface` class"
                 "will be deprecated. Please provide this parameter"
                 "in `launch()` instead")
-        
+
         if api_mode is not None:
             warnings.warn("The `api_mode` parameter in the `Interface` is deprecated.")
         self.api_mode = False
@@ -429,10 +430,7 @@ class Interface:
             durations.append(duration)
             predictions.extend(prediction)
 
-        if return_duration:
-            return predictions, durations
-        else:
-            return predictions
+        return (predictions, durations) if return_duration else predictions
 
     def process(
         self, 
@@ -711,11 +709,10 @@ class Interface:
             analytics_integration = "CometML"
             comet_ml.log_other("Created from", "Gradio")
             if self.share_url is not None:
-                comet_ml.log_text("gradio: " + self.share_url)
-                comet_ml.end()
+                comet_ml.log_text(f"gradio: {self.share_url}")
             else:
-                comet_ml.log_text("gradio: " + self.local_url)
-                comet_ml.end()
+                comet_ml.log_text(f"gradio: {self.local_url}")
+            comet_ml.end()
         if wandb is not None:
             analytics_integration = "WandB"
             if self.share_url is not None:

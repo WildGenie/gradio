@@ -162,11 +162,10 @@ def get_huggingface_interface(model_name, api_key, alias):
         if isinstance(data, dict):  # HF doesn't allow additional parameters for binary files (e.g. images or audio files)
             data.update({'options': {'wait_for_model': True}})
             data = json.dumps(data)
-        response = requests.request("POST", api_url, headers=headers, data=data)        
-        if not(response.status_code == 200):
+        response = requests.request("POST", api_url, headers=headers, data=data)
+        if response.status_code != 200:
             raise ValueError("Could not complete request to HuggingFace API, Error {}".format(response.status_code))
-        output = pipeline['postprocess'](response)
-        return output
+        return pipeline['postprocess'](response)
     
     if alias is None:
         query_huggingface_api.__name__ = model_name
@@ -189,8 +188,7 @@ def load_interface(name, src=None, api_key=None, alias=None):
         src = tokens[0]
         name = "/".join(tokens[1:])
     assert src.lower() in repos, "parameter: src must be one of {}".format(repos.keys())
-    interface_info = repos[src](name, api_key, alias)
-    return interface_info
+    return repos[src](name, api_key, alias)
 
 def interface_params_from_config(config_dict):
     ## instantiate input component and output component
@@ -359,9 +357,7 @@ def load_from_pipeline(pipeline):
             data = pipeline(*data)
         else:
             data = pipeline(**data)
-        # print("Before postprocessing", data)
-        output = pipeline_info["postprocess"](data)
-        return output
+        return pipeline_info["postprocess"](data)
     
     interface_info = pipeline_info.copy()
     interface_info["fn"] = fn

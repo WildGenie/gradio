@@ -73,7 +73,7 @@ def encode_plot_to_base64(plt):
         plt.savefig(output_bytes, format="png")
         bytes_data = output_bytes.getvalue()
     base64_str = str(base64.b64encode(bytes_data), 'utf-8')
-    return "data:image/png;base64," + base64_str
+    return f"data:image/png;base64,{base64_str}"
 
 def encode_array_to_base64(image_array):
     with BytesIO() as output_bytes:
@@ -81,7 +81,7 @@ def encode_array_to_base64(image_array):
         PIL_image.save(output_bytes, 'PNG')
         bytes_data = output_bytes.getvalue()
     base64_str = str(base64.b64encode(bytes_data), 'utf-8')
-    return "data:image/png;base64," + base64_str
+    return f"data:image/png;base64,{base64_str}"
 
 
 def resize_and_crop(img, size, crop_type='center'):
@@ -144,7 +144,7 @@ def decode_base64_to_file(encoding, encryption_key=None, file_path=None):
         filename = os.path.basename(file_path)
         prefix = filename
         if "." in filename:
-            prefix = filename[0: filename.index(".")]
+            prefix = filename[:filename.index(".")]
             extension = filename[filename.index(".") + 1:]
     if extension is None:
         file_obj = tempfile.NamedTemporaryFile(delete=False, prefix=prefix)
@@ -160,7 +160,7 @@ def create_tmp_copy_of_file(file_path):
     file_name = os.path.basename(file_path)
     prefix, extension = file_name, None
     if "." in file_name:
-        prefix = file_name[0: file_name.index(".")]
+        prefix = file_name[:file_name.index(".")]
         extension = file_name[file_name.index(".") + 1:]
     if extension is None:
         file_obj = tempfile.NamedTemporaryFile(delete=False, prefix=prefix)
@@ -282,10 +282,7 @@ def _convert(image, dtype, force_copy=False, uniform=False):
         kind = a.dtype.kind
         if n > m and a.max() < 2 ** m:
             mnew = int(np.ceil(m / 2) * 2)
-            if mnew > m:
-                dtype = "int{}".format(mnew)
-            else:
-                dtype = "uint{}".format(mnew)
+            dtype = "int{}".format(mnew) if mnew > m else "uint{}".format(mnew)
             n = int(np.ceil(n / 2) * 2)
             return a.astype(_dtype_bits(kind, m))
         elif n == m:

@@ -81,8 +81,9 @@ def queue_thread(path_to_local_server, test_mode=False):
                 _, hash, input_data, task_type = next_job
                 queueing.start_job(hash)
                 response = requests.post(
-                    path_to_local_server + "/api/" + task_type + "/", 
-                    json=input_data)
+                    f'{path_to_local_server}/api/{task_type}/', json=input_data
+                )
+
                 if response.status_code == 200:
                     queueing.pass_job(hash, response.json())
                 else:
@@ -91,7 +92,6 @@ def queue_thread(path_to_local_server, test_mode=False):
                 time.sleep(1)
         except Exception as e:
             time.sleep(1)
-            pass
         if test_mode:
             break
 
@@ -126,18 +126,17 @@ def start_server(
     url_host_name = "localhost" if server_name == "0.0.0.0" else server_name
     path_to_local_server = "http://{}:{}/".format(url_host_name, port)
     auth = interface.auth
-    if auth is not None:
-        if not callable(auth):
-            app.auth = {account[0]: account[1] for account in auth}
-        else:
-            app.auth = auth
-    else:
+    if auth is None:
         app.auth = None
+    elif not callable(auth):
+        app.auth = {account[0]: account[1] for account in auth}
+    else:
+        app.auth = auth
     app.interface = interface
     app.cwd = os.getcwd()
     app.favicon_path = interface.favicon_path
     app.tokens = {}
-    
+
     if app.interface.enable_queue:
         if auth is not None or app.interface.encrypt:
             raise ValueError("Cannot queue with encryption or authentication enabled.")
@@ -147,7 +146,7 @@ def start_server(
         app.queue_thread.start()
     if interface.save_to is not None:  # Used for selenium tests
         interface.save_to["port"] = port
-                
+
     config = uvicorn.Config(app=app, port=port, host=server_name, 
                             log_level="warning")
     server = Server(config=config)
@@ -157,7 +156,11 @@ def start_server(
 
 def setup_tunnel(local_server_port: int, endpoint: str) -> str:
     response = url_request(
-        endpoint + '/v1/tunnel-request' if endpoint is not None else GRADIO_API_SERVER)
+        f'{endpoint}/v1/tunnel-request'
+        if endpoint is not None
+        else GRADIO_API_SERVER
+    )
+
     if response and response.code == 200:
         try:
             payload = json.loads(response.read().decode("utf-8"))[0]
@@ -171,8 +174,7 @@ def url_request(url: str) -> Optional[http.client.HTTPResponse]:
         req = urllib.request.Request(
             url=url, headers={"content-type": "application/json"}
         )
-        res = urllib.request.urlopen(req, timeout=10)
-        return res
+        return urllib.request.urlopen(req, timeout=10)
     except Exception as e:
         raise RuntimeError(str(e))
 

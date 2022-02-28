@@ -37,8 +37,8 @@ def run():
         demo_folder_file.Upload()
         demo_folder = demo_folder_file.metadata["id"]
     for demo_name in os.listdir(GRADIO_DEMO_DIR):
-        notebook_title = demo_name + ".ipynb"
-        print("--- " + demo_name + " ---")
+        notebook_title = f'{demo_name}.ipynb'
+        print(f"--- {demo_name} ---")
         with open(os.path.join(GRADIO_DEMO_DIR, demo_name, "run.py")) as demo_file:
             demo_content = demo_file.read()
             demo_content = demo_content.replace('if __name__ == "__main__":\n    iface.launch()', "iface.launch()")

@@ -102,9 +102,7 @@ def render_docs():
                 continue
             if "DEPRECATED" in line:
                 continue
-            if mode == "pre":
-                func_doc.append(line)
-            elif mode == "in":
+            if mode == "in":
                 space_index = line.index(" ")
                 colon_index = line.index(":")
                 name = line[:space_index]
@@ -114,6 +112,8 @@ def render_docs():
             elif mode == "out":
                 colon_index = line.index(":")
                 return_doc.append((line[1:colon_index-1], line[colon_index+2:]))
+            elif mode == "pre":
+                func_doc.append(line)
         params = inspect.getfullargspec(func)
         param_set = []
         for i in range(len(params.args)):
@@ -122,18 +122,14 @@ def render_docs():
                 continue
             if params.defaults and i < len(params.defaults):
                 default = params.defaults[neg_index]
-                if type(default) == str:
-                    default = '"' + default + '"'
-                else:
-                    default = str(default)
+                default = '"' + default + '"' if type(default) == str else str(default)
                 param_set.insert(0, (params.args[neg_index], default))
             else:
                 param_set.insert(0, (params.args[neg_index],))
         return "\n".join(func_doc), param_set, params_doc, return_doc
 
     def get_class_documentation(cls):
-        inp = {}
-        inp["name"] = cls.__name__
+        inp = {"name": cls.__name__}
         doc = inspect.getdoc(cls)
         doc_lines = doc.split("\n")
         inp["doc"] = "\n".join(doc_lines[:-2])
