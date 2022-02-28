@@ -279,7 +279,7 @@ class TestJSON(unittest.TestCase):
 class TestHTML(unittest.TestCase):
     def test_in_interface(self):
         def bold_text(text):
-            return "<strong>" + text + "</strong>"
+            return f"<strong>{text}</strong>"
 
         iface = gr.Interface(bold_text, "text", "html")
         self.assertEqual(iface.process(["test"])[0][0], "<strong>test</strong>")
@@ -414,7 +414,7 @@ class TestTimeseries(unittest.TestCase):
 class TestNames(unittest.TestCase):
     def test_no_duplicate_uncased_names(self):  # this ensures that get_input_instance() works correctly when instantiating from components
         subclasses = gr.outputs.OutputComponent.__subclasses__()
-        unique_subclasses_uncased = set([s.__name__.lower() for s in subclasses])
+        unique_subclasses_uncased = {s.__name__.lower() for s in subclasses}
         self.assertEqual(len(subclasses), len(unique_subclasses_uncased))
 
 if __name__ == '__main__':

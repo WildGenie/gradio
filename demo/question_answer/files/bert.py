@@ -28,16 +28,13 @@ class QA:
         self.n_best_size = 20
         self.max_answer_length = 30
         self.model, self.tokenizer = self.load_model(model_path)
-        if torch.cuda.is_available():
-            self.device = 'cuda'
-        else:
-            self.device = 'cpu'
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model.to(self.device)
         self.model.eval()
 
 
     def load_model(self,model_path: str,do_lower_case=False):
-        config = BertConfig.from_pretrained(model_path + "/bert_config.json")
+        config = BertConfig.from_pretrained(f'{model_path}/bert_config.json')
         tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case=do_lower_case)
         model = BertForQuestionAnswering.from_pretrained(model_path, from_tf=False, config=config)
         return model, tokenizer
@@ -71,5 +68,11 @@ class QA:
                                     start_logits = to_list(outputs[0][i]),
                                     end_logits   = to_list(outputs[1][i]))
                 all_results.append(result)
-        answer = get_answer(example,features,all_results,self.n_best_size,self.max_answer_length,self.do_lower_case)
-        return answer
+        return get_answer(
+            example,
+            features,
+            all_results,
+            self.n_best_size,
+            self.max_answer_length,
+            self.do_lower_case,
+        )

@@ -17,7 +17,7 @@ def outbreak(r, month, countries, social_distancing):
     for i, country in enumerate(countries):
         series = x ** (r) * (i + 1)
         plt.plot(x, series)
-    plt.title("Outbreak in " + month)
+    plt.title(f"Outbreak in {month}")
     plt.ylabel("Cases")
     plt.xlabel("Days since Day 0")
     plt.legend(countries)

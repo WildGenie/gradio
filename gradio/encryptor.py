@@ -3,16 +3,14 @@ from Crypto.Hash import SHA256
 from Crypto import Random
 
 def get_key(password):
-    key = SHA256.new(password.encode()).digest()
-    return key
+    return SHA256.new(password.encode()).digest()
 
 def encrypt(key, source):
     IV = Random.new().read(AES.block_size)  # generate IV
     encryptor = AES.new(key, AES.MODE_CBC, IV)
     padding = AES.block_size - len(source) % AES.block_size  # calculate needed padding
     source += bytes([padding]) * padding  # Python 2.x: source += chr(padding) * padding
-    data = IV + encryptor.encrypt(source)  # store the IV at the beginning and encrypt
-    return data
+    return IV + encryptor.encrypt(source)
 
 def decrypt(key, source):
     IV = source[:AES.block_size]  # extract the IV from the beginning

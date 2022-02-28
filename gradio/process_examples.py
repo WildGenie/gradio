@@ -31,8 +31,11 @@ def load_from_cache(interface, example_id: int) -> List[Any]:
     with open(CACHE_FILE) as cache:
         examples = list(csv.reader(cache))
     example = examples[example_id + 1] # +1 to adjust for header
-    output = []
-    for component, cell in zip(interface.output_components, example):
-        output.append(component.restore_flagged(
-            CACHED_FOLDER, cell, interface.encryption_key if interface.encrypt else None))
-    return output
+    return [
+        component.restore_flagged(
+            CACHED_FOLDER,
+            cell,
+            interface.encryption_key if interface.encrypt else None,
+        )
+        for component, cell in zip(interface.output_components, example)
+    ]

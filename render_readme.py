@@ -19,7 +19,7 @@ for code_src in code_tags:
         code[code_src] = "```python\n" + python_code + "\n```"
 
 for demo_src in demo_tags:
-    demos[demo_src] = "![" + demo_src + " interface](demo/" + demo_src + "/screenshot.gif)"
+    demos[demo_src] = f"![{demo_src} interface](demo/{demo_src}/screenshot.gif)"
 
 class GuidesLoader(BaseLoader):
     def __init__(self, path):

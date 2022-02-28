@@ -11,16 +11,17 @@ def tax_calculator(income, marital_status, assets):
     total_deductible = sum(assets[assets["Deduct"]]["Cost"])
     taxable_income = income - total_deductible
 
-    total_tax = 0
-    for bracket, rate in tax_brackets:
-        if taxable_income > bracket:
-            total_tax += (taxable_income - bracket) * rate / 100
-    
-    if marital_status == "Married":
-        total_tax *= 0.75
-    elif marital_status == "Divorced":
+    total_tax = sum(
+        (taxable_income - bracket) * rate / 100
+        for bracket, rate in tax_brackets
+        if taxable_income > bracket
+    )
+
+    if marital_status == "Divorced":
         total_tax *= 0.8
-    
+
+    elif marital_status == "Married":
+        total_tax *= 0.75
     return round(total_tax)
 
 iface = gr.Interface(

@@ -53,21 +53,34 @@ class SimpleCSVLogger(FlaggingCallback):
         flagging_dir = self.flagging_dir
         log_filepath = "{}/log.csv".format(flagging_dir)
 
-        csv_data = []
-        for i, input in enumerate(interface.input_components):
-            csv_data.append(input.save_flagged(
-                flagging_dir, interface.config["input_components"][i]["label"], input_data[i], None))
-        for i, output in enumerate(interface.output_components):
-            csv_data.append(output.save_flagged(
-                flagging_dir, interface.config["output_components"][i]["label"], output_data[i], None) if
-                            output_data[i] is not None else "")
-        
+        csv_data = [
+            input.save_flagged(
+                flagging_dir,
+                interface.config["input_components"][i]["label"],
+                input_data[i],
+                None,
+            )
+            for i, input in enumerate(interface.input_components)
+        ]
+
+        csv_data.extend(
+            output.save_flagged(
+                flagging_dir,
+                interface.config["output_components"][i]["label"],
+                output_data[i],
+                None,
+            )
+            if output_data[i] is not None
+            else ""
+            for i, output in enumerate(interface.output_components)
+        )
+
         with open(log_filepath, "a", newline="") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(csv_data)
-        
+
         with open(log_filepath, "r") as csvfile:
-            line_count = len([None for row in csv.reader(csvfile)]) - 1
+            line_count = len([None for _ in csv.reader(csvfile)]) - 1
         return line_count
 
 
@@ -197,8 +210,8 @@ class HuggingFaceDatasetSaver(FlaggingCallback):
         updated, and pushed from.
         """
         try:
-            import huggingface_hub 
-        except (ImportError, ModuleNotFoundError):
+            import huggingface_hub
+        except ImportError:
             raise ImportError("Package `huggingface_hub` not found is needed "
             "for HuggingFaceDatasetSaver. Try 'pip install huggingface_hub'.")
         path_to_dataset_repo = huggingface_hub.create_repo(
@@ -210,7 +223,7 @@ class HuggingFaceDatasetSaver(FlaggingCallback):
             local_dir=self.dataset_dir, clone_from=path_to_dataset_repo, 
             use_auth_token=self.hf_foken)
         self.repo.git_pull()
-        
+
         #Should filename be user-specified?
         self.log_file = os.path.join(self.dataset_dir, "data.csv")  
 
@@ -220,7 +233,7 @@ class HuggingFaceDatasetSaver(FlaggingCallback):
         is_new = not os.path.exists(self.log_file)
         with open(self.log_file, "a", newline="") as csvfile:
             writer = csv.writer(csvfile)
-            
+
             # Generate the headers
             if is_new:
                 headers = [interface["label"] for interface in interface.config["input_components"]]
@@ -228,27 +241,43 @@ class HuggingFaceDatasetSaver(FlaggingCallback):
                 if interface.flagging_options is not None:
                     headers.append("flag")
                 writer.writerow(headers)
-            
+
             # Generate the row corresponding to the flagged sample
-            csv_data = []
-            for i, input in enumerate(interface.input_components):
-                csv_data.append(input.save_flagged(self.dataset_dir, interface.config["input_components"][i]["label"], input_data[i], None))
-            for i, output in enumerate(interface.output_components):
-                csv_data.append(output.save_flagged(self.dataset_dir, interface.config["output_components"][i]["label"], output_data[i], None) if
-                    output_data[i] is not None else "")
+            csv_data = [
+                input.save_flagged(
+                    self.dataset_dir,
+                    interface.config["input_components"][i]["label"],
+                    input_data[i],
+                    None,
+                )
+                for i, input in enumerate(interface.input_components)
+            ]
+
+            csv_data.extend(
+                output.save_flagged(
+                    self.dataset_dir,
+                    interface.config["output_components"][i]["label"],
+                    output_data[i],
+                    None,
+                )
+                if output_data[i] is not None
+                else ""
+                for i, output in enumerate(interface.output_components)
+            )
+
             if flag_option is not None:
                 csv_data.append(flag_option)
-            
+
             # Write the rows
             writer.writerow(csv_data)
 
         # return number of samples in dataset
         with open(self.log_file, "r") as csvfile:
-            line_count = len([None for row in csv.reader(csvfile)]) - 1
+            line_count = len([None for _ in csv.reader(csvfile)]) - 1
 
         # push the repo 
         self.repo.push_to_hub(
             commit_message="Flagged sample #{}".format(line_count))
-        
+
         return line_count
 

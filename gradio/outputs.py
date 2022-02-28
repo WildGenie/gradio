@@ -82,13 +82,17 @@ class Textbox(OutputComponent):
         Returns:
         (Union[str, number]): output value
         """
-        if self.type == "str" or self.type == "auto":
+        if self.type in ["str", "auto"]:
             return str(y)
         elif self.type == "number":
             return y
         else:
-            raise ValueError("Unknown type: " + self.type +
-                             ". Please choose from: 'str', 'number'")
+            raise ValueError(
+                (
+                    f"Unknown type: {self.type}"
+                    + ". Please choose from: 'str', 'number'"
+                )
+            )
 
 
 class Label(OutputComponent):
@@ -122,7 +126,11 @@ class Label(OutputComponent):
         Returns:
         (Dict[label: str, confidences: List[Dict[label: str, confidence: number]]]): Object with key 'label' representing primary label, and key 'confidences' representing a list of label-confidence pairs
         """
-        if self.type == "label" or (self.type == "auto" and (isinstance(y, str) or isinstance(y, Number))):
+        if (
+            self.type == "label"
+            or self.type == "auto"
+            and isinstance(y, (str, Number))
+        ):
             return {"label": str(y)}
         elif self.type == "confidences" or (self.type == "auto" and isinstance(y, dict)):
             sorted_pred = sorted(
@@ -147,12 +155,22 @@ class Label(OutputComponent):
 
     def deserialize(self, y):
         # 5 cases: (1): {'label': 'lion'}, {'label': 'lion', 'confidences':...}, {'lion': 0.46, ...}, 'lion', '0.46'
-        if self.type == "label" or (self.type == "auto" and (isinstance(y, str) or isinstance(y, int) or isinstance(y, float) or ('label' in y and not('confidences' in y.keys())))):
+        if (
+            self.type == "label"
+            or self.type == "auto"
+            and (
+                isinstance(y, str)
+                or isinstance(y, int)
+                or isinstance(y, float)
+                or 'label' in y
+                and 'confidences' not in y.keys()
+            )
+        ):
             if isinstance(y, str) or isinstance(y, int) or isinstance(y, float):
                 return y
             else:
                 return y['label']
-        elif self.type == "confidences" or self.type == "auto":
+        elif self.type in ["confidences", "auto"]:
             if ('confidences' in y.keys()) and isinstance(y['confidences'], list):
                 return {k['label']: k['confidence'] for k in y['confidences']}
             else:
@@ -246,13 +264,17 @@ class Image(OutputComponent):
         elif dtype == "plot":
             out_y = processing_utils.encode_plot_to_base64(y)
         else:
-            raise ValueError("Unknown type: " + dtype +
-                             ". Please choose from: 'numpy', 'pil', 'file', 'plot'.")
+            raise ValueError(
+                (
+                    f"Unknown type: {dtype}"
+                    + ". Please choose from: 'numpy', 'pil', 'file', 'plot'."
+                )
+            )
+
         return out_y
 
     def deserialize(self, x):
-        y = processing_utils.decode_base64_to_file(x).name
-        return y
+        return processing_utils.decode_base64_to_file(x).name
 
     def save_flagged(self, dir, label, data, encryption_key):
         return self.save_flagged_file(dir, label, data, encryption_key)
@@ -296,8 +318,8 @@ class Video(OutputComponent):
         """
         returned_format = y.split(".")[-1].lower()
         if self.type is not None and returned_format != self.type:
-            output_file_name = y[0: y.rindex(
-                ".") + 1] + self.type
+            output_file_name = (y[:y.rindex(
+                ".") + 1] + self.type)
             ff = FFmpeg(
                 inputs={y: None},
                 outputs={output_file_name: None}
@@ -453,17 +475,21 @@ class Audio(OutputComponent):
         Returns:
         (str): base64 url data
         """
-        if self.type in ["numpy", "file", "auto"]:
-            if self.type == "numpy" or (self.type == "auto" and isinstance(y, tuple)):
-                sample_rate, data = y
-                file = tempfile.NamedTemporaryFile(
-                    prefix="sample", suffix=".wav", delete=False)
-                processing_utils.audio_to_file(sample_rate, data, file.name)
-                y = file.name
-            return processing_utils.encode_url_or_file_to_base64(y)
-        else:
-            raise ValueError("Unknown type: " + self.type +
-                             ". Please choose from: 'numpy', 'file'.")
+        if self.type not in ["numpy", "file", "auto"]:
+            raise ValueError(
+                (
+                    f"Unknown type: {self.type}"
+                    + ". Please choose from: 'numpy', 'file'."
+                )
+            )
+
+        if self.type == "numpy" or (self.type == "auto" and isinstance(y, tuple)):
+            sample_rate, data = y
+            file = tempfile.NamedTemporaryFile(
+                prefix="sample", suffix=".wav", delete=False)
+            processing_utils.audio_to_file(sample_rate, data, file.name)
+            y = file.name
+        return processing_utils.encode_url_or_file_to_base64(y)
 
     def deserialize(self, x):
         return processing_utils.decode_base64_to_file(x).name
@@ -498,10 +524,7 @@ class JSON(OutputComponent):
         Returns:
         (Union[Dict, List]): JSON output
         """
-        if isinstance(y, str):
-            return json.dumps(y)
-        else:
-            return y
+        return json.dumps(y) if isinstance(y, str) else y
 
     @classmethod
     def get_shortcut_implementations(cls):
@@ -664,8 +687,12 @@ class Dataframe(OutputComponent):
                 y = [y]
             return {"data": y}
         else:
-            raise ValueError("Unknown type: " + self.type +
-                             ". Please choose from: 'pandas', 'numpy', 'array'.")
+            raise ValueError(
+                (
+                    f"Unknown type: {self.type}"
+                    + ". Please choose from: 'pandas', 'numpy', 'array'."
+                )
+            )
 
     def save_flagged(self, dir, label, data, encryption_key):
         return json.dumps(data["data"])
@@ -709,19 +736,19 @@ class Carousel(OutputComponent):
         Returns:
         (List[List[Any]]): 2D array, where each sublist represents one set of outputs or 'slide' in the carousel
         """
-        if isinstance(y, list):
-            if len(y) != 0 and not isinstance(y[0], list):
-                y = [[z] for z in y]
-            output = []
-            for row in y:
-                output_row = []
-                for i, cell in enumerate(row):
-                    output_row.append(self.components[i].postprocess(cell))
-                output.append(output_row)
-            return output
-        else:
+        if not isinstance(y, list):
             raise ValueError(
                 "Unknown type. Please provide a list for the Carousel.")
+        if len(y) != 0 and not isinstance(y[0], list):
+            y = [[z] for z in y]
+        output = []
+        for row in y:
+            output_row = [
+                self.components[i].postprocess(cell) for i, cell in enumerate(row)
+            ]
+
+            output.append(output_row)
+        return output
 
     def save_flagged(self, dir, label, data, encryption_key):
         return json.dumps([
